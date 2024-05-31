@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+    <title>Find items</title>
+
+    <script>
+
+        function addToFavorite(event, productAsin, productTitle, productPrice,
+                                productStarRating, productDelivery, productUrl,productPhoto) {
+
+            event.preventDefault();
+            const button = event.target;
+            const isLiked = button.innerText === 'Liked';
+
+            const data = {
+                product_asin: productAsin,
+                product_title: productTitle,
+                product_price: productPrice,
+                product_star_rating: productStarRating,
+                product_delivery: productDelivery,
+                product_url: productUrl,
+                product_photo: productPhoto,
+                action: isLiked ? 'unlike' : 'like'
+            };
+            // In the python file
+            fetch('/home/add_to_favorite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+
+                if (isLiked) {
+                    alert("Removed from liked");
+                    button.style.backgroundColor = '';
+                    button.style.color = 'black';
+                    button.innerText = 'Like';
+                    button.style.border = '';
+                } else {
+                    button.style.backgroundColor = 'red';
+                    button.style.color = 'white';
+                    button.innerText = 'Liked';
+                    button.style.border = 'none';
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to update favorite status');
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Welcome {{ name }} </h1><br>
+
+    <div class="favorites">
+        <form action="/home/liked_products">
+            <input type="submit" value="View Liked Products">
+        </form>
+    </div>
+
+    <div class="back-to-login">
+        <form action="/">
+            <input type="submit" value="Logout">
+        </form>
+    </div>
+
+    <div class="form-container">
+        {% if message %}
+            <div class="success-message">{{ message }}</div><br><br>
+        {% endif %}
+
+        <h2>Enter Item Details</h2>
+        <form action="/home" method="post">
+            <label for="item_name">Item Name:</label>
+            <input type="text" id="item_name" name="item_name" required placeholder="Enter Item name">
+            <br><br>
+            <label for="country">Select Country:</label>
+            <select id="country" name="country">
+                <option value="US">United States</option>
+                <option value="AU">Australia</option>
+                <option value="BR">Brazil</option>
+                <option value="CA">Canada</option>
+                <option value="CN">China</option>
+                <option value="FR">France</option>
+                <option value="DE">Germany</option>
+                <option value="IN">India</option>
+                <option value="IT">Italy</option>
+                <option value="MX">Mexico</option>
+                <option value="NL">Netherlands</option>
+                <option value="SG">Singapore</option>
+                <option value="ES">Spain</option>
+                <option value="TR">Turkey</option>
+                <option value="AE">United Arab Emirates</option>
+                <option value="GB">United Kingdom</option>
+                <option value="JP">Japan</option>
+                <option value="SA">Saudi Arabia</option>
+                <option value="PL">Poland</option>
+                <option value="SE">Sweden</option>
+                <option value="BE">Belgium</option>
+                <option value="EG">Egypt</option>
+            </select>
+            <br><br>
+            <input type="submit" value="Submit">
+        </form>
+
+    </div>
+    
+
+    {% if total_results %}
+    <h2>Product Information</h2>
+    <div class="product-container">
+        {% for product in total_results.product %}
+        <div class="product-box">
+            <h3>{{ product.product_title }}</h3>{{ product.asin }}
+            <div class="product-details">
+                <div class="product-photo">
+                    <img src="{{ product.product_photo }}" alt="Product Photo">
+                </div>
+                <div class="product-text">
+                    <p>Price: {{ product.product_price }}</p>
+                    <p>Star Rating: {{ product.product_star_rating }}</p>
+                    <p>Delivery: {{ product.delivery }}</p>
+                    <p><a href="{{ product.product_url }}" target="_blank">Product Link</a></p>
+                    <div class="btn">
+                        <button 
+                            onclick="addToFavorite(event, 
+                            '{{ product.asin }}', 
+                            '{{ product.product_title | e }}', 
+                            '{{ product.product_price | e }}', 
+                            '{{ product.product_star_rating | e }}', 
+                            '{{ product.delivery | e }}', 
+                            '{{ product.product_url | e }}', 
+                            '{{ product.product_photo | e }}')">
+                            Like
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</body>
+</html>

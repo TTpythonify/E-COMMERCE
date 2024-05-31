@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+    <title>Liked Products</title>
+
+    <script>
+        function addToFavorite(event, productAsin, productTitle, productPrice,
+                                productStarRating, productDelivery, productUrl, 
+                                productPhoto) {
+            event.preventDefault();
+
+            const button = event.target;
+            const isLiked = button.innerText === 'Unlike';
+
+            const data = {
+                product_asin: productAsin,
+                product_title: productTitle,
+                product_price: productPrice,
+                product_star_rating: productStarRating,
+                product_delivery: productDelivery,
+                product_url: productUrl,
+                product_photo: productPhoto,
+                action: isLiked ? 'unlike' : 'like'
+            };
+
+            // send post request to that end point
+            fetch('/home/add_to_favorite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+
+                if (isLiked) {
+                    button.style.backgroundColor = '';
+                    button.style.color = 'black';
+                    button.innerText = 'Like';
+                    button.style.border = '';
+                } else {
+                    button.style.backgroundColor = 'red';
+                    button.style.color = 'white';
+                    button.innerText = 'Liked';
+                    button.style.border = 'none';
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to update favorite status');
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <h1>Liked Products</h1>
+        <div class="favorites">
+            <form action="/home/">
+                <input type="submit" value="View Products">
+            </form>
+        </div>
+    {% if liked_products %}
+    
+        <div class="product-container">
+            {% for product in liked_products %}
+                <div class="product-box">
+                    <h3>{{ product[1] }}</h3>{{ product[0] }}
+                    <div class="product-details">
+                        <div class="product-photo">
+                            <img src="{{ product[5] }}" alt="Product Photo">
+                        </div>
+                        <div class="product-text">
+                            <p>Price: {{ product[2] }}</p>
+                            <p>Star Rating: {{ product[3] }}</p>
+                            <p>Delivery: {{ product[6] }}</p>
+                            <p><a href="{{ product[4] }}" target="_blank">Product Link</a></p>
+                            <div class="btn">
+                                <button 
+                                    style="background-color: red; color: white; border: none;"
+                                    onclick="addToFavorite(event, 
+                                    '{{ product[0] }}', 
+                                    '{{ product[1] | e }}', 
+                                    '{{ product[2] | e }}', 
+                                    '{{ product[3] | e }}', 
+                                    '{{ product[6] | e }}', 
+                                    '{{ product[4] | e }}', 
+                                    '{{ product[5] | e }}')">
+                                    Unlike
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <h2>You have no liked products</h2>
+    {% endif %}
+</body>
+</html>
