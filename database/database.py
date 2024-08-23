@@ -1,3 +1,12 @@
+######################################################################
+###################### DATABASE.PY ###################################
+######################################################################
+
+"""
+This module contains the database class which is used to interact with my local database
+1.Each function has a description and performs unique queries
+"""
+
 import psycopg2
 
 # CONNECT TO THE DATABASE
@@ -18,7 +27,7 @@ def create_table():
                 CREATE TABLE IF NOT EXISTS users_details_ecommerce (
                     id SERIAL PRIMARY KEY,
                     username VARCHAR(50) UNIQUE NOT NULL, 
-                    password VARCHAR(100) NOT NULL
+                    password BYTEA NOT NULL
                 )
             """)
             conn.commit()
@@ -40,26 +49,19 @@ def create_table():
             """)
             conn.commit()
 
-# FETCHES USERNAME FROM THE DATABASE
-def username_in_database(name, password):
-    with connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""SELECT * FROM users_details_ecommerce WHERE username = %s""", (name,))
-            user = cur.fetchone()  # This fetches the user
-
-    # This checks if there is a user and the password matches
-    if user and user[2] == password:
-        return True
-    else:
-        return False
 
 # ADD USERS DETAILS TO THE DATABASE
 def insert_into_database(username, password):
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("INSERT INTO users_details_ecommerce (username, password) VALUES (%s, %s)", 
-                        (username, password))
+            cur.execute("""
+                INSERT INTO users_details_ecommerce 
+                (username, password) VALUES (%s, %s)
+                RETURNING id;
+            """, 
+            (username, password))
             conn.commit()
+
 
 # USED TO GET THE USER ID FROM THE DATABASE
 def get_user_id(username):
@@ -71,6 +73,20 @@ def get_user_id(username):
                 return result[0]
             else:
                 raise ValueError("User with username '{}' not found.".format(username))
+
+# USED TO GET USERS HASHED PASSWORD FOR COMPARISM
+def get_user_password(username):
+    with connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT password FROM users_details_ecommerce WHERE username = %s", (username,))
+            result = cur.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+
+            
+
 
 # ADD TO LIKE TABLE
 def add_to_like_table(user_id, product):
@@ -107,6 +123,7 @@ def remove_from_like_table(user_id, product_asin):
             conn.commit()
 
 
+# GET USERS LIKED PRODUCTS
 def get_user_liked_products(user_id):
     with connect() as conn:
         with conn.cursor() as cur:
